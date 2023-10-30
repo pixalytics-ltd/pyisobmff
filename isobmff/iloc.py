@@ -83,7 +83,7 @@ class ItemLocationBox(FullBox):
                     tuples += (
                         (
                             f'item[{idx}]["extent"][{jdx}]["item_reference_index"]',
-                            extent["item_reference_index"],
+                            item["item_reference_index"],
                         ),
                     )
                 tuples += (

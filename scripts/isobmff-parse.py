@@ -36,6 +36,7 @@ default_values = {
     "item_id": None,
     "infile": None,
     "outfile": None,
+    "extract": False,
 }
 
 
@@ -104,6 +105,8 @@ def test_directory(testdir, debug):
         for fname, error in error_list.items():
             print(f"-> {fname}")
             print(f"{error}")
+    else:
+        print("# NO BROKEN FILES")
 
 
 def extract_bytes(infile, offset, size, outfile, debug):
@@ -288,6 +291,14 @@ def get_options(argv):
         metavar="output-file",
         help="output file",
     )
+    parser.add_argument(
+        "-e",
+        "--extract",
+        action="store_true",
+        dest="extract",
+        default=False,
+        help="Extract HEIC content",
+    )
     # do the parsing
     options = parser.parse_args(argv[1:])
     if options.version:
@@ -321,6 +332,11 @@ def main(argv):
 
     if options.func == "parse":
         print(media_file)
+
+        if options.extract:
+            print("Extracting the data: ")
+            
+
 
     elif options.func in ["extract-box", "extract-value"]:
         include_header = options.func == "extract-box"
