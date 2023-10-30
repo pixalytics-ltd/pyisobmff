@@ -30,4 +30,5 @@ env/
 venv/
 ENV/
 
-installed
+# PyCharm 
+.idea/*
