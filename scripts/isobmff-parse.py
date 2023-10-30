@@ -8,6 +8,8 @@ import glob
 import os
 import pathlib
 import sys
+from PIL import Image
+import pillow_heif as ph
 
 dirname = os.path.dirname(sys.modules[__name__].__file__)
 this_dir = os.path.abspath(dirname)
@@ -183,6 +185,26 @@ def process_items(media_file, outfile, input_item_id, debug):
         _, _, _, start_offset, size = items[input_item_id]
         extract_bytes(media_file.filename, start_offset, size, outfile, debug)
 
+def extract_items(infile, media_file, outfile, debug):
+    items = {}
+
+    iinf_box = media_file.find_subbox("/meta/iinf")
+    assert iinf_box is not None, "error: cannot find /meta/iinf"
+    print(iinf_box)
+
+    iprp_box = media_file.find_subbox("/meta/iprp")
+    assert iprp_box is not None, "error: cannot find /meta/iinf"
+    print(iprp_box)
+
+    # Extract image using PILLOW
+    if ph.is_supported(infile):
+        ph.register_heif_opener()
+        himage = Image.open(infile)
+    else:
+        print("HEIF not supported")
+
+
+
 
 def get_options(argv):
     """Generic option parser.
@@ -331,11 +353,11 @@ def main(argv):
     media_file = parse_file(options.infile, options.debug)
 
     if options.func == "parse":
-        print(media_file)
-
         if options.extract:
             print("Extracting the data: ")
-            
+            extract_items(options.infile, media_file, options.outfile, options.debug)
+        else:
+            print(media_file)
 
 
     elif options.func in ["extract-box", "extract-value"]:
