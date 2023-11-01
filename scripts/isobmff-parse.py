@@ -218,17 +218,24 @@ def extract_items(infile, media_file, outfile, debug):
     heicimg = pyvips.Image.heifload(infile, access="sequential")
     print(f'Dimensions: {heicimg.width}x{heicimg.height}')
 
-
     # Do conversion from vips image to Numpy array
-    na = heicimg.numpy()
-    print(f'Numpy array dimensions: {na.shape}, dtype:{na.dtype}')
+    try:
+        na = heicimg.numpy()
+        print(f'Numpy array dimensions: {na.shape}, dtype:{na.dtype}')
 
-    # Output
-    if os.path.exists(outfile):
-        os.remove(outfile)
-    heicimg.write_to_file(outfile)
-    if os.path.exists(outfile):
-        print("Wrote {}".format(outfile))
+        # Output
+        if os.path.exists(outfile):
+            os.remove(outfile)
+        heicimg.write_to_file(outfile)
+        if os.path.exists(outfile):
+            print("Wrote {}".format(outfile))
+
+    except:
+        print("Failed to decode {}".format(infile))
+        cmd = "vips.exe --vips-config"
+        #cmd = "heif-convert --list-decoders"
+        res = os.system(cmd)
+        print(res)
 
 def get_options(argv):
     """Generic option parser.
