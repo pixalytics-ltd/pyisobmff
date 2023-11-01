@@ -8,8 +8,13 @@ import glob
 import os
 import pathlib
 import sys
-from PIL import Image
-import pillow_heif as ph
+import numpy as np
+
+# pip install --user pyvips
+if sys.platform == "win32":
+    vipsbin = r'C:\DDrive\OGC-code-sprint\vips-dev-8.15\bin'
+    os.environ['PATH'] = vipsbin + ';' + os.environ['PATH']
+import pyvips
 
 dirname = os.path.dirname(sys.modules[__name__].__file__)
 this_dir = os.path.abspath(dirname)
@@ -41,7 +46,25 @@ default_values = {
     "extract": False,
 }
 
+# map vips formats to np dtypes
+format_to_dtype = {
+   'uchar': np.uint8,
+   'char': np.int8,
+   'ushort': np.uint16,
+   'short': np.int16,
+   'uint': np.uint32,
+   'int': np.int32,
+   'float': np.float32,
+   'double': np.float64,
+   'complex': np.complex64,
+   'dpcomplex': np.complex128,
+}
 
+# vips image to numpy array
+def vips2numpy(vi):
+    return np.ndarray(buffer=vi.write_to_memory(),
+                  dtype=format_to_dtype[vi.format],
+                  shape=[vi.height, vi.width, vi.bands])
 def parse_file(infile, debug):
     media_file = isobmff.MediaFile(infile, debug)
     media_file.read()
@@ -186,25 +209,26 @@ def process_items(media_file, outfile, input_item_id, debug):
         extract_bytes(media_file.filename, start_offset, size, outfile, debug)
 
 def extract_items(infile, media_file, outfile, debug):
-    items = {}
 
-    iinf_box = media_file.find_subbox("/meta/iinf")
-    assert iinf_box is not None, "error: cannot find /meta/iinf"
-    print(iinf_box)
+    infe2_box = media_file.find_subbox("/meta/iinf/infe2")
+    assert infe2_box is not None, "error: cannot find /meta/iinf/infe2"
+    print("Security: ", infe2_box.item_name)
 
-    iprp_box = media_file.find_subbox("/meta/iprp")
-    assert iprp_box is not None, "error: cannot find /meta/iinf"
-    print(iprp_box)
-
-    # Extract image using PILLOW
-    if ph.is_supported(infile):
-        ph.register_heif_opener()
-        himage = Image.open(infile)
-    else:
-        print("HEIF not supported")
+    # Open HEIF/HEIC image using pyvips
+    heicimg = pyvips.Image.heifload(infile, access="sequential")
+    print(f'Dimensions: {heicimg.width}x{heicimg.height}')
 
 
+    # Do conversion from vips image to Numpy array
+    na = heicimg.numpy()
+    print(f'Numpy array dimensions: {na.shape}, dtype:{na.dtype}')
 
+    # Output
+    if os.path.exists(outfile):
+        os.remove(outfile)
+    heicimg.write_to_file(outfile)
+    if os.path.exists(outfile):
+        print("Wrote {}".format(outfile))
 
 def get_options(argv):
     """Generic option parser.
